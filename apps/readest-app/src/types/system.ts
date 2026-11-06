@@ -242,6 +242,7 @@ export interface AppService {
   getBookFileSize(book: Book): Promise<number | null>;
   loadBookConfig(book: Book, settings: SystemSettings): Promise<BookConfig>;
   fetchBookDetails(book: Book): Promise<BookMetadata>;
+  countBookWords(book: Book): Promise<number | undefined>;
   saveBookConfig(book: Book, config: BookConfig, settings?: SystemSettings): Promise<void>;
   loadBookNav(book: Book): Promise<BookNav | null>;
   saveBookNav(book: Book, nav: BookNav): Promise<void>;

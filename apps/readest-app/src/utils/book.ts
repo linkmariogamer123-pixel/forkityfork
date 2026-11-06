@@ -10,6 +10,7 @@ import {
 } from '@/types/book';
 import { SUPPORTED_LANGS } from '@/services/constants';
 import { getLocale, getUserLang, makeSafeFilename } from './misc';
+import { countTextWords } from './word';
 import { getStorageType } from './storage';
 import { getDirFromLanguage } from './rtl';
 import { code6392to6391, isValidLang, normalizedLangCode } from './lang';
@@ -25,6 +26,28 @@ export const getBookDocPageCount = (bookDoc: BookDoc, format: BookFormat): numbe
   }
   const size = sections.reduce((sum, s) => sum + (s.linear !== 'no' && s.size > 0 ? s.size : 0), 0);
   return Math.ceil(size / 1500) || undefined;
+};
+
+/**
+ * Words in the main text (sections not marked `linear="no"`), or undefined for
+ * fixed-layout books (PDF, comics), which have no running text to count.
+ */
+export const countBookDocWords = async (
+  bookDoc: BookDoc,
+  format: BookFormat,
+): Promise<number | undefined> => {
+  if (bookDoc.rendition?.layout === 'pre-paginated' || FIXED_LAYOUT_FORMATS.has(format)) {
+    return undefined;
+  }
+  let words = 0;
+  for (const section of bookDoc.sections ?? []) {
+    if (section.linear === 'no') continue;
+    const body = (await section.createDocument()).body;
+    if (!body) continue;
+    body.querySelectorAll('script, style').forEach((el) => el.remove());
+    words += countTextWords(body.textContent ?? '');
+  }
+  return words;
 };
 
 export { getBookPageCount } from '@/services/bookshelves/fields';

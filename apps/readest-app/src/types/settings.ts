@@ -1,5 +1,6 @@
 import type { InkTool } from '@/services/handwriting/model';
 import type { BookshelfState } from './bookshelf';
+import type { ReadingGoal } from '@/services/statistics/readingGoal';
 import { CustomTheme } from '@/styles/themes';
 import { CustomFont } from '@/styles/fonts';
 import { CustomTexture } from '@/styles/textures';
@@ -598,6 +599,8 @@ export interface SystemSettings {
   webSources?: WebSource[];
   /** Additional image-search engines for the cover editor. Device-local. */
   coverSearchEngines?: CoverSearchEngine[];
+  /** Reading goal shown on the Reading Statistics screen; unset means no goal. */
+  readingGoal?: ReadingGoal;
   metadataSeriesCollapsed: boolean;
   metadataOthersCollapsed: boolean;
   metadataDescriptionCollapsed: boolean;

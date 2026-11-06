@@ -90,6 +90,22 @@ export const getWordCount = (text: string): number => {
   return text.trim().split(/\s+/).filter(Boolean).length;
 };
 
+// Chinese and Japanese don't put spaces between words, so each character counts
+// as a word, as word processors do. Korean puts spaces between words, so it
+// is counted like other space-separated scripts.
+const UNSPACED_CJK_CHAR = /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}]/gu;
+
+/** Words in running book text: whitespace-separated tokens, plus CJK characters. */
+export const countTextWords = (text: string): number => {
+  if (!text) return 0;
+  const cjk = text.match(UNSPACED_CJK_CHAR)?.length ?? 0;
+  const spaced = text
+    .replace(UNSPACED_CJK_CHAR, ' ')
+    .split(/\s+/)
+    .filter((token) => /[\p{L}\p{N}]/u.test(token)).length;
+  return cjk + spaced;
+};
+
 // Whether the selected text plausibly denotes a single dictionary lookup term
 // rather than a passage. Space-delimited scripts: one whitespace-free token.
 // CJK has no spaces between words, so a length cap stands in for the word

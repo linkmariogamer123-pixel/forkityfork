@@ -626,6 +626,10 @@ export abstract class BaseAppService implements AppService {
     return BookSvc.fetchBookDetails(this.fs, book, this.downloadBook.bind(this));
   }
 
+  async countBookWords(book: Book) {
+    return BookSvc.countBookWords(this.fs, book);
+  }
+
   async saveBookConfig(book: Book, config: BookConfig, settings?: SystemSettings) {
     return BookSvc.saveBookConfig(this.fs, book, config, settings);
   }

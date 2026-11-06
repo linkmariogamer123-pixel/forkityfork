@@ -220,6 +220,16 @@ export class StatisticsDb {
     return rows[0] ?? { seconds: 0, books: 0, pages: 0 };
   }
 
+  /** Distinct pages read in events that started at or after `since` (Unix seconds). */
+  async getPagesReadSince(since: number): Promise<number> {
+    const rows = await this.db.select<{ pages: number }>(
+      `SELECT COUNT(DISTINCT id_book || '-' || page) AS pages
+       FROM page_stat_data WHERE start_time >= ?`,
+      [since],
+    );
+    return rows[0]?.pages ?? 0;
+  }
+
   async getBookByMd5(md5: string): Promise<BookRow | null> {
     const rows = await this.db.select<BookRow>(`SELECT * FROM book WHERE md5 = ? LIMIT 1`, [md5]);
     return rows[0] ?? null;

@@ -25,6 +25,7 @@ import {
   getStableMetadataHash,
   parseSeriesPosition,
   getBookDocPageCount,
+  countBookDocWords,
 } from '@/utils/book';
 import type { BookNav } from '@/services/nav';
 import { partialMD5, md5 } from '@/utils/md5';
@@ -1311,6 +1312,25 @@ export async function fetchBookDetails(
   try {
     bookDoc = (await new DocumentLoader(file).open()).book;
     return bookDoc.metadata;
+  } finally {
+    try {
+      await bookDoc?.destroy?.();
+    } catch {}
+    const f = file as ClosableFile;
+    if (f && f.close) {
+      await f.close();
+    }
+  }
+}
+
+/** Opens the book file and counts its words; see `countBookDocWords`. */
+export async function countBookWords(fs: FileSystem, book: Book): Promise<number | undefined> {
+  const { file } = await loadBookContent(fs, book);
+  let bookDoc: BookDoc | undefined;
+  try {
+    let format: BookFormat;
+    ({ book: bookDoc, format } = await new DocumentLoader(file).open());
+    return await countBookDocWords(bookDoc, format);
   } finally {
     try {
       await bookDoc?.destroy?.();

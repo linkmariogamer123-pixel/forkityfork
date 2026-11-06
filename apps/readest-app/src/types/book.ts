@@ -168,6 +168,9 @@ export interface Book {
   // an unopened book can show and sort by it (#6662). Like `hasNarration`, it is
   // re-derived on every import; once opened, `progress[1]` holds the same total.
   pageCount?: number;
+  // Words in the book's main text, counted on this device the first time its
+  // details are opened. Device-local: not part of the synced book record.
+  wordCount?: number;
   duration?: number; // total audio length in seconds (ABS audiobooks)
   // Marks this ABS stub as a podcast show or ebook rather than an audiobook.
   // Audio books remain unmarked (absMediaType undefined).

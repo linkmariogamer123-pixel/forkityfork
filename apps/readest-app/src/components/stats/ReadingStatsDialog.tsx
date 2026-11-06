@@ -11,6 +11,9 @@ import { formatDuration } from '@/utils/duration';
 import { getLocale } from '@/utils/misc';
 import ReadingTimeChart from './ReadingTimeChart';
 import ReadingHeatmap from './ReadingHeatmap';
+import ReadingGoalCard from './ReadingGoalCard';
+import { useLibraryStore } from '@/store/libraryStore';
+import { countBooksFinishedInYear, startOfLocalDay } from '@/services/statistics/readingGoal';
 
 export const setReadingStatsDialogVisible = (visible: boolean) => {
   const dialog = document.getElementById('reading_stats_window');
@@ -25,12 +28,14 @@ export const setReadingStatsDialogVisible = (visible: boolean) => {
 interface ReadingStats {
   daily: Map<string, number>;
   totals: { seconds: number; books: number; pages: number };
+  todayPages: number;
 }
 
 const ReadingStatsContent: React.FC = () => {
   const _ = useTranslation();
   const { appService } = useEnv();
   const { user } = useAuth();
+  const { library } = useLibraryStore();
   const [stats, setStats] = useState<ReadingStats | null>(null);
   const [failed, setFailed] = useState(false);
 
@@ -38,11 +43,12 @@ const ReadingStatsContent: React.FC = () => {
     if (!appService) return;
     let cancelled = false;
     const load = async (db: StatisticsDb) => {
-      const [quarters, totals] = await Promise.all([
+      const [quarters, totals, todayPages] = await Promise.all([
         db.getQuarterHourDurations(),
         db.getReadingTotals(),
+        db.getPagesReadSince(startOfLocalDay(new Date())),
       ]);
-      if (!cancelled) setStats({ daily: getDailySeconds(quarters), totals });
+      if (!cancelled) setStats({ daily: getDailySeconds(quarters), totals, todayPages });
     };
     StatisticsDb.open(appService)
       .then(async (db) => {
@@ -80,13 +86,20 @@ const ReadingStatsContent: React.FC = () => {
   }
   if (!stats) return null;
 
-  const { daily, totals } = stats;
+  const { daily, totals, todayPages } = stats;
+  const now = new Date();
+  const goalInput = {
+    todaySeconds: daily.get(toDateKey(now)) ?? 0,
+    todayPages,
+    booksThisYear: countBooksFinishedInYear(library, now.getFullYear()),
+  };
   const streaks = getStreaks(daily);
   const time = (seconds: number) => formatDuration(Math.floor(seconds / 60), _);
   const days = (count: number) => _('{{count}} days', { count });
 
   return (
     <div className='flex flex-col gap-6 pb-6'>
+      <ReadingGoalCard input={goalInput} />
       <BoxedList title={_('Reading Time')} innerClassName='pe-4 py-4'>
         <ReadingTimeChart daily={daily} />
       </BoxedList>

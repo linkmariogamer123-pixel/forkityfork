@@ -34,15 +34,21 @@ import {
 } from '@/utils/book';
 import { isFeedBook } from '@/services/rss/feedBookUrl';
 import { saveSysSettings } from '@/helpers/settings';
+import { formatDuration } from '@/utils/duration';
+import { getLocale } from '@/utils/misc';
 import BookCover from '@/components/BookCover';
 import BookCoverViewer, { useBookCoverViewer } from '@/components/BookCoverViewer';
 import Dropdown from '../Dropdown';
 import MenuItem from '../MenuItem';
 
+const WORDS_PER_MINUTE = 250;
+
 interface BookDetailViewProps {
   book: Book;
   metadata: BookMetadata | null;
   fileSize: number | null;
+  /** Words in the book; null while counting, undefined when unavailable. */
+  wordCount?: number | null;
   shareEnabled?: boolean;
   onEdit?: () => void;
   onDelete?: () => void;
@@ -63,6 +69,7 @@ const BookDetailView: React.FC<BookDetailViewProps> = ({
   book,
   metadata,
   fileSize,
+  wordCount,
   shareEnabled,
   onEdit,
   onDelete,
@@ -339,6 +346,30 @@ const BookDetailView: React.FC<BookDetailViewProps> = ({
                     {getBookPageCount(book) || _('Unknown')}
                   </p>
                 </div>
+                {/* Words and the time to read them at an average 250 words a minute. */}
+                {wordCount !== undefined && (
+                  <>
+                    <div className='overflow-hidden'>
+                      <span className='font-bold'>{_('Words')}</span>
+                      <p className='text-neutral-content text-sm'>
+                        {wordCount === null
+                          ? _('Counting…')
+                          : wordCount.toLocaleString(getLocale())}
+                      </p>
+                    </div>
+                    <div className='overflow-hidden pe-1 text-end sm:text-start'>
+                      <span className='font-bold'>{_('Reading Time')}</span>
+                      <p className='text-neutral-content text-sm'>
+                        {wordCount === null
+                          ? _('Counting…')
+                          : formatDuration(
+                              Math.max(1, Math.round(wordCount / WORDS_PER_MINUTE)),
+                              _,
+                            )}
+                      </p>
+                    </div>
+                  </>
+                )}
                 <div className='col-span-2 overflow-hidden sm:col-span-1'>
                   <span className='font-bold'>{_('Identifier')}</span>
                   <p className='text-neutral-content line-clamp-1 text-sm'>

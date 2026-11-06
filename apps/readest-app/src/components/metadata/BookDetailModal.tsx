@@ -1,7 +1,8 @@
 import clsx from 'clsx';
 import React, { useEffect, useState } from 'react';
 
-import { Book } from '@/types/book';
+import { Book, FIXED_LAYOUT_FORMATS } from '@/types/book';
+import { useLibraryStore } from '@/store/libraryStore';
 import { getBookWithUpdatedMetadata } from '@/utils/book';
 import { BookMetadata } from '@/libs/document';
 import { useEnv } from '@/context/EnvContext';
@@ -72,6 +73,8 @@ const BookDetailModal: React.FC<BookDetailModalProps> = ({
   const [bookMeta, setBookMeta] = useState<BookMetadata | null>(null);
   const [bookTags, setBookTags] = useState<string[]>(book.tags ?? []);
   const [fileSize, setFileSize] = useState<number | null>(null);
+  // undefined: not available; null: still counting.
+  const [wordCount, setWordCount] = useState<number | null | undefined>(book.wordCount);
   // The parent owns the `book` prop and does not re-pass it after a metadata
   // save, so the details view tracks the saved book locally to refresh its
   // cover/title/author immediately (otherwise it shows the stale prop).
@@ -131,6 +134,34 @@ const BookDetailModal: React.FC<BookDetailModalProps> = ({
       }
     };
     fetchBookDetails();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [book]);
+
+  useEffect(() => {
+    setWordCount(book.wordCount);
+    if (book.wordCount !== undefined || !book.downloadedAt) return;
+    if (FIXED_LAYOUT_FORMATS.has(book.format)) return;
+    let cancelled = false;
+    setWordCount(null);
+    (async () => {
+      try {
+        const appService = await envConfig.getAppService();
+        const count = await appService.countBookWords(book);
+        if (cancelled) return;
+        setWordCount(count);
+        if (count === undefined) return;
+        const current = useLibraryStore.getState().getBookByHash(book.hash);
+        if (current) {
+          await useLibraryStore.getState().updateBook(envConfig, { ...current, wordCount: count });
+        }
+      } catch (err) {
+        console.warn('Failed to count words:', err);
+        if (!cancelled) setWordCount(undefined);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [book]);
 
@@ -283,6 +314,7 @@ const BookDetailModal: React.FC<BookDetailModalProps> = ({
                 book={displayBook}
                 metadata={bookMeta}
                 fileSize={fileSize}
+                wordCount={wordCount}
                 shareEnabled={shareEnabled}
                 onEdit={handleBookMetadataUpdate ? handleEditMetadata : undefined}
                 onDelete={handleBookDelete ? handleDelete : undefined}
